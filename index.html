@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fund Manager Time Machine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a111f;--panel:#111b30;--panel2:#16233d;--line:#243556;--txt:#e6edf7;--dim:#8fa3c2;--amber:#ffb020;--up:#4ade80;--down:#f87171;--cyan:#38bdf8;
+--disp:'Barlow Condensed','Noto Sans TC','PingFang TC','Microsoft JhengHei','Arial Narrow',Impact,sans-serif;--mono:'IBM Plex Mono','Noto Sans TC',ui-monospace,Menlo,monospace;--body:'Inter','Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--txt);font-family:var(--body);-webkit-text-size-adjust:100%}
+body{min-height:100vh;background:radial-gradient(1200px 500px at 50% -200px,#16305a 0,transparent 70%),var(--bg)}
+button{font-family:inherit;cursor:pointer;border:0;color:inherit}
+.tape{position:sticky;top:0;z-index:20;background:#050a14;border-bottom:1px solid var(--line);overflow:hidden;white-space:nowrap;height:30px}
+.tape .in{display:inline-block;padding-left:100%;animation:tape 38s linear infinite;font:600 12px/30px var(--mono);color:var(--amber);letter-spacing:.06em}
+.tape .in span{margin-right:42px}.lang{position:absolute;right:0;top:0;height:30px;background:#050a14;padding:0 10px 0 14px;display:flex;align-items:center;gap:2px;box-shadow:-10px 0 10px #050a14}.lang button{font:600 12px var(--mono);padding:3px 8px;border-radius:4px;background:transparent;color:var(--dim)}.lang button.on{background:var(--amber);color:#1a1202}.up{color:var(--up)}.dn{color:var(--down)}
+@keyframes tape{to{transform:translateX(-100%)}}
+@media (prefers-reduced-motion:reduce){.tape .in{animation:none;padding-left:12px}}
+#app{max-width:560px;margin:0 auto;padding:14px 14px 40px}
+h1,h2,h3{font-family:var(--disp);font-weight:700;letter-spacing:.02em;text-transform:uppercase}
+.board{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.lbl{font:600 11px var(--mono);color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.btn{display:block;width:100%;padding:15px;border-radius:10px;background:var(--amber);color:#1a1202;font:700 20px var(--disp);letter-spacing:.06em;text-transform:uppercase}
+.btn:active{transform:translateY(1px)}.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);font-size:16px;padding:11px}
+.btn[disabled]{opacity:.45}
+.hero h1{font-size:46px;line-height:.95;color:var(--amber)}.hero p{color:var(--dim);margin:10px 0}
+.hero ul{margin:12px 0 16px 18px;color:var(--txt);line-height:1.6}
+input[type=text]{width:100%;padding:13px;border-radius:10px;border:1px solid var(--line);background:#0b1426;color:var(--txt);font:500 16px var(--body);margin-bottom:12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.rd{font:600 13px var(--mono);color:var(--dim);letter-spacing:.08em}
+.clock{font:600 22px var(--mono);color:var(--amber);min-width:74px;text-align:right}.clock.low{color:var(--down)}
+.bar{height:6px;border-radius:3px;background:#0b1426;overflow:hidden;margin-bottom:12px}.bar i{display:block;height:100%;background:var(--amber);width:100%}
+h2.head{font-size:30px;line-height:1.05;margin-bottom:12px}
+.news li{margin:0 0 8px 18px;line-height:1.5;font-size:15px}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.tile{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;border-left:4px solid var(--c)}
+.tile b{display:block;font:600 11px var(--mono);color:var(--dim);letter-spacing:.08em}.tile em{font:600 18px var(--mono);font-style:normal}.tile small{display:block;font:500 12px var(--mono);margin-top:2px;color:var(--dim)}
+.tile.wide{grid-column:span 2}
+.view{border-top:1px solid var(--line);padding:10px 0}.view:first-of-type{border-top:0;padding-top:0}
+.view .who{font-weight:600;font-size:14px}.view .meta{font-size:12px;color:var(--dim);margin:2px 0 4px}.view p{font-size:14px;line-height:1.5}
+.chip{display:inline-block;font:600 10px var(--mono);letter-spacing:.08em;padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:1px}
+.chip.BULL{background:#12351f;color:var(--up)}.chip.CAUT{background:#3a1717;color:var(--down)}.chip.MIX{background:#2e2a14;color:var(--amber)}
+.trade{position:sticky;bottom:0;z-index:10;background:#0d1730;border:1px solid var(--line);border-radius:14px 14px 0 0;padding:12px;margin:0 -4px;box-shadow:0 -8px 24px #000a}
+.wl{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.wl b{font:600 20px var(--mono);color:var(--amber)}
+.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;background:#0b1426;margin-bottom:10px}.stack i{display:block;height:100%;transition:width .15s}
+.row{display:grid;grid-template-columns:78px 36px 1fr 36px 46px;align-items:center;gap:6px;margin-bottom:6px}
+.row .nm{font:600 14px var(--disp);letter-spacing:.04em;text-transform:uppercase}.row .nm::before{content:'';display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--c);margin-right:6px}
+.row button{height:34px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);font:600 18px var(--mono)}
+.row .v{font:600 14px var(--mono);text-align:right}
+input[type=range]{width:100%;accent-color:var(--amber);height:28px}
+.pre{display:flex;gap:6px;margin:6px 0 10px}.pre button{flex:1;padding:8px 4px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);font-size:12px;color:var(--dim)}
+.rev .asset{display:grid;grid-template-columns:96px 1fr 64px;align-items:center;gap:8px;margin:9px 0}
+.rev .asset .t{height:22px;background:#0b1426;border-radius:5px;position:relative;overflow:hidden}
+.rev .asset .t i{position:absolute;top:0;bottom:0;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.rev .asset .n{font:600 15px var(--mono);text-align:right}.rev .asset .nm{font:600 15px var(--disp);text-transform:uppercase;letter-spacing:.04em}
+.big{font:700 36px var(--mono);color:var(--amber)}.sub{color:var(--dim);font-size:13px}
+.lb{width:100%;border-collapse:collapse;font-size:14px}.lb td{padding:8px 6px;border-top:1px solid var(--line)}.lb td:last-child{text-align:right;font-family:var(--mono)}.lb tr.me td{color:var(--amber);font-weight:600}
+.card{background:linear-gradient(160deg,#18305a,#0f1c36 60%);border:2px solid var(--amber);border-radius:16px;padding:18px;margin-bottom:12px;text-align:center}
+.card .k{font:600 11px var(--mono);color:var(--dim);letter-spacing:.16em}.card h2{font-size:42px;color:var(--amber);line-height:1;margin:6px 0}
+.card p{font-size:15px;line-height:1.5;margin-top:8px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.stats div{background:#0b1426;border-radius:8px;padding:8px 4px}.stats b{display:block;font:600 16px var(--mono)}.stats span{font-size:11px;color:var(--dim)}
+details{border-top:1px solid var(--line);padding:9px 0}summary{cursor:pointer;font-weight:600;font-size:14px}details p,details li{font-size:14px;line-height:1.5;margin-top:6px}details ul{margin-left:18px}
+.chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.chips span{font:500 11px var(--mono);padding:2px 6px;border-radius:4px;background:#0b1426;border-left:3px solid var(--c)}
+.ask{border:1px dashed var(--amber);border-radius:10px;padding:10px 12px;color:var(--amber);font-size:14px;margin:12px 0}
+.note{font-size:12px;color:var(--dim);line-height:1.55}
+svg text{font-family:var(--mono)}
+html[lang=zh-Hant] .lbl,html[lang=zh-Hant] .rd,html[lang=zh-Hant] .tile b,html[lang=zh-Hant] .card .k{letter-spacing:.03em}html[lang=zh-Hant] .tile b{font-size:12px}
+@media (min-width:900px){#app{max-width:1080px}.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;align-items:start}.trade{position:sticky;top:44px;bottom:auto;border-radius:14px;margin:0}.top{margin-bottom:10px}}
+</style>
+</head>
+<body>
+<div class="tape"><div class="in" id="tape"></div><div class="lang"><button id="l-en">EN</button><button id="l-zh">中文</button></div></div>
+<main id="app"></main>
+<script>
+/* Fund Manager Time Machine v2 (2020-2025) — data + scoring (all numbers from research2/06_verified.md) */
+const Core = (function () {
+  const START = 1000000;
+  const ASSETS = [
+    { k: 'stocks',  name: 'Stocks',  sub: 'S&P 500', color: '#38bdf8' },
+    { k: 'bitcoin', name: 'Bitcoin', sub: 'BTC price', color: '#fb923c' },
+    { k: 'bonds',   name: 'Bonds',   sub: 'US Treasuries', color: '#2dd4bf' },
+    { k: 'gold',    name: 'Gold',    sub: 'Gold price', color: '#fbbf24' },
+    { k: 'cash',    name: 'Cash',    sub: 'Short-term T-bills', color: '#94a3b8' }
+  ];
+  // Whole-percent returns from this round to the next (index 0 = R1->R2 ... 7 = R8->31 Dec 2025).
+  // Order: stocks, bitcoin, bonds, gold, cash. From research2/06_verified.md section C.
+  const RET = [
+    [ 69, 422, -1, 22, 0],
+    [ 23,  94, -3,  0, 0],
+    [ -6, -37, -5,  3, 0],
+    [ -6, -58, -9, -8, 1],
+    [ -5,  18,  1,  6, 1],
+    [ 34, 167,  5, 29, 7],
+    [  9,  53,  0, 30, 3],
+    [ 21,   6,  4, 40, 3]
+  ];
+  // Levels on each date (index 0..7) + 31 Dec 2025 (index 8)
+  const LV = [
+    { sp: 2237.40, btc: 6416.31,  y10: 0.76, gold: 1525.40, fed: '0–0.25%' },
+    { sp: 3787.38, btc: 33466.10, y10: 1.07, gold: 1853.70, fed: '0–0.25%' },
+    { sp: 4646.71, btc: 64995.23, y10: 1.56, gold: 1859.40, fed: '0–0.25%' },
+    { sp: 4357.86, btc: 41143.93, y10: 2.19, gold: 1913.20, fed: '0–0.25% (hike announced today)' },
+    { sp: 4080.11, btc: 17168.57, y10: 3.68, gold: 1753.50, fed: '3.75–4.00%' },
+    { sp: 3861.59, btc: 20187.24, y10: 3.70, gold: 1861.25, fed: '4.50–4.75%' },
+    { sp: 5186.33, btc: 53991.46, y10: 3.78, gold: 2393.85, fed: '5.25–5.50%' },
+    { sp: 5670.97, btc: 82485.71, y10: 4.20, gold: 3119.75, fed: '4.25–4.50%' },
+    { sp: 6845.50, btc: 87508.83, y10: 4.18, gold: 4367.80, fed: '3.50–3.75%' }
+  ];
+  const DATES = ['23 Mar 2020', '28 Jan 2021', '10 Nov 2021', '16 Mar 2022', '30 Nov 2022', '10 Mar 2023', '5 Aug 2024', '2 Apr 2025', '31 Dec 2025'];
+  const SHORT = ['Mar 2020', 'Jan 2021', 'Nov 2021', 'Mar 2022', 'Nov 2022', 'Mar 2023', 'Aug 2024', 'Apr 2025', 'Dec 2025'];
+  const SPAN = ['10 months', '9 months', '4 months', '8 months', '3 months', '1 year 5 months', '8 months', '9 months'];
+  const CASH_ALL = [0, 0, 0, 0, 100];
+
+  const sum = a => a.reduce((x, y) => x + y, 0);
+  const mean = a => (a.length ? sum(a) / a.length : 0);
+  const validAlloc = a => Array.isArray(a) && a.length === 5 && a.every(v => Number.isInteger(v) && v >= 0) && sum(a) === 100;
+
+  // allocs: array (len<=8) of allocation arrays or null. Missing = carry over previous (R1 default: all cash).
+  function effective(allocs, upto) {
+    const out = []; let prev = CASH_ALL;
+    for (let i = 0; i < upto; i++) {
+      const a = validAlloc(allocs[i]) ? allocs[i] : prev;
+      out.push(a); prev = a;
+    }
+    return out;
+  }
+  function growth(a, i) { let m = 0; for (let j = 0; j < 5; j++) m += (a[j] / 100) * (1 + RET[i][j] / 100); return m; }
+  function path(allocs, upto) {
+    const eff = effective(allocs, upto); const p = [START];
+    for (let i = 0; i < upto; i++) p.push(p[i] * growth(eff[i], i));
+    return p;
+  }
+  function fixed(a) { return Array.from({ length: 8 }, () => a); }
+  function bestAsset(i) { const r = RET[i]; return r.indexOf(Math.max.apply(null, r)); }
+  function hindsight() { return Array.from({ length: 8 }, (_, i) => { const a = [0, 0, 0, 0, 0]; a[bestAsset(i)] = 100; return a; }); }
+  const BOTS = [
+    { id: 'sp',   name: 'Buy-and-hold S&P 500', allocs: fixed([100, 0, 0, 0, 0]) },
+    { id: 'eq',   name: 'Equal split (20% each)', allocs: fixed([20, 20, 20, 20, 20]) },
+    { id: 'cash', name: 'Cash only', allocs: fixed(CASH_ALL) }
+  ];
+  const HINDSIGHT = { id: 'time', name: 'Perfect hindsight', allocs: hindsight() };
+  const finalOf = allocs => path(allocs, 8)[8];
+
+  // Cumulative index per asset at rounds 1..k (R1 = 100)
+  function cumIndex(k) {
+    return ASSETS.map((_, j) => { const s = [100]; for (let i = 0; i < k - 1; i++) s.push(s[i] * (1 + RET[i][j] / 100)); return s; });
+  }
+
+  const TYPES = {
+    storm: { name: 'The Storm Spotter', line: 'You cut your risk before the 2022 fall.', lesson: 'Acting on a warning (6.2% inflation in Nov 2021) while prices are still near record highs is hard. Staying out too long can also cost you: stocks and Bitcoin rose strongly after 2023.' },
+    bull:  { name: 'The Bull Rider', line: 'You love stocks and Bitcoin, and you ride the waves.', lesson: 'High risk paid a lot in 2020-21 and 2023-25, but 2022 was deep: Bitcoin fell 58% in eight months and stocks fell too.' },
+    safe:  { name: 'The Safe Keeper', line: 'You prefer bonds, gold and cash. You sleep well.', lesson: 'Safe assets protect you in a crisis, but you can miss big rallies. And bonds are not always safe: they lost 9% in 2022 when interest rates rose.' },
+    chase: { name: 'The Trend Chaser', line: 'You often move money into last round\'s winner.', lesson: 'Last period\'s winner is not always the next winner. Bitcoin\'s +422% was followed by -37% and -58%.' },
+    contra:{ name: 'The Contrarian', line: 'You often buy what just fell, or sell what just rose.', lesson: 'Going against the crowd can work, but timing is the hard part.' },
+    busy:  { name: 'The Busy Trader', line: 'You change your mix a lot, round after round.', lesson: 'Every move needs a good reason. In real life, trading also costs money.' },
+    mix:   { name: 'The Steady Mixer', line: 'You spread your money and change it slowly.', lesson: 'Diversification does not win every round, but it avoids the worst surprises.' }
+  };
+
+  function analyze(allocs) {
+    const eff = effective(allocs, 8);
+    const risk = a => a[0] + a[1];
+    const avgRisk = mean(eff.map(risk));
+    let moves = 0, chase = 0, contra = 0; const shifts = [];
+    for (let i = 1; i < 8; i++) {
+      const d = eff[i].map((v, j) => v - eff[i - 1][j]);
+      const shift = sum(d.filter(v => v > 0)); shifts.push(shift);
+      if (shift >= 10) {
+        moves++;
+        const j = d.indexOf(Math.max.apply(null, d)); const r = RET[i - 1];
+        if (r[j] === Math.max.apply(null, r)) chase++;
+        if (r[j] === Math.min.apply(null, r)) contra++;
+      }
+    }
+    const turnover = mean(shifts);
+    const riskEarly = mean(eff.slice(0, 2).map(risk));
+    let t = 'mix';
+    if (riskEarly >= 40 && Math.min(risk(eff[2]), risk(eff[3])) <= 30) t = 'storm';
+    else if (avgRisk >= 70) t = 'bull';
+    else if (avgRisk <= 30) t = 'safe';
+    else if (chase >= 3) t = 'chase';
+    else if (contra >= 3) t = 'contra';
+    else if (turnover >= 30) t = 'busy';
+    return { type: t, info: TYPES[t], avgRisk: Math.round(avgRisk), moves, chase, contra, turnover: Math.round(turnover) };
+  }
+
+  const fmt = n => Math.round(n).toLocaleString('en-US');
+  const pct = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n) + '%';
+
+  return { START, ASSETS, RET, LV, DATES, SHORT, SPAN, CASH_ALL, BOTS, HINDSIGHT, TYPES, validAlloc, effective, path, finalOf, cumIndex, analyze, bestAsset, growth, fmt, pct, sum };
+})();
+
+
+/* Round content v2 (2020-2025, simple English). Every fact is from research2/06_verified.md (with 04_events.md and 05_views.md) or computed from its numbers. */
+const Content = [
+  { n: 1, date: '23 Mar 2020', title: 'The world shuts down',
+    news: [
+      'COVID-19 is spreading around the world. Many countries are closing borders and telling people to stay home.',
+      'Stocks have fallen fast. The S&P 500 closed at 2,237 today. That is 34% below its record high of 3,386 on 19 February.',
+      'This morning, before the market opened, the Fed said it will keep buying government bonds and mortgage bonds "in the amounts needed". There is no fixed limit, so the press calls it "unlimited QE" (the Fed creates money to buy bonds). It also started new programs to lend to companies.',
+      'The Fed\'s interest rate is already almost zero (0-0.25%). The 10-year yield is 0.76%.',
+      'Gold is $1,525 an ounce. Bitcoin is about $6,400.'],
+    views: [
+      { who: 'Federal Reserve', role: 'US central bank, statement', when: '23 Mar 2020', tone: 'BULL', text: 'Says it is "committed to use its full range of tools" to support the US economy. It will buy bonds as much as needed.' },
+      { who: 'Bill Ackman', role: 'Hedge fund manager, Pershing Square', when: '18 Mar 2020', tone: 'CAUT', text: 'Urges the President to close the country for 30 days. He says a short, strong shutdown is better than a long, messy one. "the only answer is to shut down the country for the next 30 days"' },
+      { who: 'Jeremy Siegel', role: 'Professor, Wharton School', when: '12 Mar 2020', tone: 'MIX', text: 'Worried in the short term, and says "I think we need bold measures". He thinks the recovery can come faster than in 2008.' }],
+    ask: 'Stocks are down 34% in five weeks, and the Fed is stepping in. Do you buy, or do you wait?',
+    after: [
+      'Today was the lowest close of the crash. On 27 March the US Congress passed a rescue package of about $2 trillion (the CARES Act).',
+      'By 18 August the S&P 500 had reached a new record. By January 2021 it was 69% higher than today, and Bitcoin was 422% higher.'] },
+
+  { n: 2, date: '28 Jan 2021', title: 'Reddit traders take on Wall Street',
+    news: [
+      'GameStop (GME) is a video-game store chain. Small investors, organized on a Reddit forum, have been buying its shares. Hedge funds that bet the price would fall (short sellers) are losing a lot of money.',
+      'Today GME opened at $265 and touched $483. It closed at $193.60, down from $347.51 yesterday.',
+      'Robinhood and other brokers stopped customers from buying GME, AMC and other shares. Customers could still sell. Robinhood said it was because of higher deposit rules at the clearing house.',
+      'The stock market as a whole did fine: the S&P 500 rose 1% to 3,787. It is 69% above its March 2020 low.',
+      'Bitcoin is $33,466, more than 5 times higher than in March 2020. The Fed rate is 0-0.25%. Gold is $1,854.'],
+    views: [
+      { who: 'Elon Musk', role: 'CEO of Tesla and SpaceX', when: '26 Jan 2021', tone: 'BULL', text: 'Tweets "Gamestonk!!" with a link to the Reddit forum that was hyping GameStop. The shares then jumped in after-hours trading.' },
+      { who: 'Michael Burry', role: 'Investor, Scion Asset Management', when: '27 Jan 2021', tone: 'CAUT', text: 'Calls the trading "unnatural, insane, and dangerous" and asks the SEC (the US market regulator) to look at it.' },
+      { who: 'Chamath Palihapitiya', role: 'Venture investor', when: '27 Jan 2021', tone: 'MIX', text: 'Bought GameStop call options, then says he sold that morning. He also defends small investors against Wall Street.' }],
+    ask: 'Prices are being moved by a crowd on social media. Is this investing, or a game? How does it end?',
+    after: [
+      'On 18 February the US House of Representatives held a hearing called "Game Stopped?". The bosses of Robinhood, Citadel, Melvin Capital and Reddit all gave evidence.',
+      'GameStop\'s price soon fell sharply. Over the next 9 months stocks rose 23% and Bitcoin rose 94%.'] },
+
+  { n: 3, date: '10 Nov 2021', title: 'Inflation hits a 31-year high',
+    news: [
+      'This morning the US government said consumer prices in October were 6.2% higher than a year ago. It is the biggest 12-month rise since November 1990.',
+      'Stocks dipped a little: the S&P 500 closed at 4,647 (-0.8%), just below its record close of 8 November.',
+      'Bitcoin touched a new record of about $69,000 today. The daily close was $64,995.',
+      'On 3 November the Fed began to slow its bond buying. It still calls high inflation "transitory" (meaning temporary), and its rate is 0-0.25%.',
+      'The 10-year yield is 1.56%. Gold is $1,859.'],
+    views: [
+      { who: 'Jerome Powell', role: 'Fed Chair', when: '3 Nov 2021', tone: 'MIX', text: 'The Fed starts to slow its bond buying, but it is not time to raise rates yet. He says "transitory is a word that people have had different understandings of."' },
+      { who: 'Larry Summers', role: 'Harvard professor, former US Treasury Secretary', when: '5 Nov 2021', tone: 'CAUT', text: 'Says the Fed is letting inflation run. If it speeds up, central banks have almost no proven record of bringing the economy down softly.' },
+      { who: 'Cathie Wood', role: 'Founder, ARK Invest', when: '25 Oct 2021', tone: 'BULL', text: 'Disagrees with warnings of runaway inflation. She expects price pressure to ease after the holidays.' }],
+    ask: 'Inflation is 6.2% and the Fed calls it temporary. Who do you believe? Do you still hold your risky assets?',
+    after: [
+      'On 15 December the Fed dropped the word "transitory" and sped up the end of its bond buying. On 3 January 2022 the S&P 500 had its last record close before a long fall.',
+      'Bitcoin was down 37% by March 2022. By November 2022 its daily close was about 77% below its November 2021 peak close.'] },
+
+  { n: 4, date: '16 Mar 2022', title: 'The Fed raises rates for the first time in 3 years',
+    news: [
+      'At 2:00 pm today the Fed raised its interest rate by 0.25 points, to 0.25-0.50%. It is the first rise since December 2018. One member wanted a bigger rise (0.50). The new rate starts tomorrow.',
+      'The Fed expects more: officials\' forecasts point to about seven rises in 2022.',
+      'Russia invaded Ukraine on 24 February. Oil jumped. Brent crude settled at $127.98 on 8 March and is falling now.',
+      'Stocks rose today: the S&P 500 gained 2.2% to 4,358. It is 9% below its record close of 3 January.',
+      'The 10-year yield is 2.19%, up from 1.56% in November. Bitcoin is $41,144 and gold is $1,913.'],
+    views: [
+      { who: 'Jerome Powell', role: 'Fed Chair, press conference', when: '16 Mar 2022', tone: 'BULL', text: 'Says "the probability of a recession within the next year is not particularly elevated". He thinks the economy can handle higher rates.' },
+      { who: 'Jeremy Siegel', role: 'Professor, Wharton School', when: '3 Mar 2022', tone: 'MIX', text: 'Thinks the Fed is too slow. He wants a bigger first rise than 0.25. "They\'re going to have to do much more than that."' },
+      { who: 'Mohamed El-Erian', role: 'Economist, Allianz', when: '13 Mar 2022', tone: 'CAUT', text: 'Says "the Fed is very late and has no good policy options available anymore". He does not think the economy can handle seven rises.' }],
+    ask: 'The Fed plans many rises, but stocks went up today. Is the bad news already in the price?',
+    after: [
+      'The Fed raised rates by 0.50 in May and 0.75 in June. US inflation reached 9.1% in June, the highest since 1981.',
+      'The S&P 500 hit its low close of 3,577 on 12 October 2022. Bonds fell too: a fund of 7-10 year US Treasuries lost 9% over this period, because yields rose.'] },
+
+  { n: 5, date: '30 Nov 2022', title: 'Powell hints at slower rate rises',
+    news: [
+      'Today at about 1:30 pm, Fed Chair Powell gave a speech. He said the Fed can slow its rate rises as soon as December. But he also said rates will stay high for some time.',
+      'Stocks jumped: the S&P 500 rose 3.1% to 4,080, and the Nasdaq rose 4.4%. The S&P is 14% above its October low (3,577) but still 15% below its January 2022 record.',
+      'The Fed rate is now 3.75-4.00%, up from 0-0.25% in March. Short-term bills pay 4.37%, more than the 10-year yield (3.68%).',
+      'Bitcoin is $17,169, about 75% below its November 2021 high. On 11 November FTX, a big crypto exchange, filed for bankruptcy.',
+      'Also today, a company called OpenAI released a free chatbot called ChatGPT. It had no visible effect on markets that day. Gold is $1,754.'],
+    views: [
+      { who: 'Jerome Powell', role: 'Fed Chair, speech at the Brookings Institution', when: '30 Nov 2022', tone: 'MIX', text: 'The Fed can "moderate the pace of our rate increases" soon. But inflation is still far too high, and the final peak rate will be higher than expected.' },
+      { who: 'Michael Burry', role: 'Investor, Scion Asset Management', when: '29 Nov 2022', tone: 'CAUT', text: 'Says hopes for a soft landing are too rosy: "So we are really looking at an extended multiyear recession."' },
+      { who: 'Cathie Wood', role: 'Founder, ARK Invest', when: '22 Nov 2022', tone: 'BULL', text: 'Says the FTX crisis will clean out weak crypto projects. "We think bitcoin is coming out of this smelling like a rose."' }],
+    ask: 'Is the worst over? Or is this just a rally inside a bigger fall?',
+    after: [
+      'On 14 December the Fed raised its rate to 4.25-4.50%. OpenAI said ChatGPT had 1 million users in just five days. GPT-4 followed in March 2023.',
+      'The October 2022 low turned out to be the bottom for the S&P 500. Three months later, stocks were down 5%, but Bitcoin was up 18% and gold up 6%.'] },
+
+  { n: 6, date: '10 Mar 2023', title: 'A bank fails overnight',
+    news: [
+      'California regulators closed Silicon Valley Bank (SVB) today, and the US deposit insurer (FDIC) took over. SVB had $209 billion of assets. Many tech start-ups banked there.',
+      'It was a bank run. On 9 March, customers tried to withdraw about $42 billion in one day. Only the first $250,000 per depositor is insured, and nobody yet knows if the rest will be paid back.',
+      'Stocks fell: the S&P 500 lost 1.5% to 3,862, and a fund of regional bank stocks lost 4.4%. Investors rushed into government bonds: the 10-year yield fell to 3.70% from 3.91% the day before.',
+      'On 7 March Powell had said rates may need to go higher than planned. The Fed rate is 4.50-4.75%.',
+      'Bitcoin is $20,187 and gold is $1,861.'],
+    views: [
+      { who: 'Jerome Powell', role: 'Fed Chair, testimony to the US Senate', when: '7 Mar 2023', tone: 'MIX', text: 'Says data has been stronger than expected, so rates will likely peak higher. He is ready to go faster if needed. He does not mention bank stress.' },
+      { who: 'Bill Ackman', role: 'Hedge fund manager, Pershing Square', when: '9 Mar 2023', tone: 'CAUT', text: 'Warns that SVB\'s failure "could destroy an important long-term driver of the economy" and calls for a rescue.' },
+      { who: 'Greg Becker', role: 'CEO of SVB, call with investors', when: '9 Mar 2023', tone: 'BULL', text: 'Asks clients to stay calm: "We now ask you not to panic." The bank was closed the next day.' }],
+    ask: 'A bank failed overnight. Is it one bank, or the start of a crisis? Where is your money safe?',
+    after: [
+      'On Sunday 12 March a second bank, Signature Bank, was closed. The government said all SVB depositors would be paid, and the Fed created a new emergency loan program (BTFP).',
+      'On 19 March UBS agreed to buy Credit Suisse. First Republic Bank failed in early May. Yet 17 months later stocks were up 34%, Bitcoin up 167% and gold up 29%.'] },
+
+  { n: 7, date: '5 Aug 2024', title: 'A global sell-off in one day',
+    news: [
+      'Japan\'s Nikkei index fell 12.4% today, its worst day since 1987. Taiwan\'s index (TAIEX) fell 8.35%, the biggest one-day percentage fall on record. TSMC, Samsung and SK Hynix each fell about 10%.',
+      'Many people blamed two things. On Friday 2 August the US jobs report was weak (114,000 new jobs, unemployment up to 4.3%). And on 31 July the Bank of Japan raised its rate and the yen got stronger, so investors who borrowed cheap yen to buy other assets (the "yen carry trade") had to sell.',
+      'In the US, the S&P 500 fell 3.0% to 5,186. The VIX, the "fear index", closed at 38.57, its highest close in nearly four years.',
+      'The Fed rate is 5.25-5.50%. On 31 July Powell said a September cut might be possible. The 10-year yield is 3.78%.',
+      'Bitcoin is $53,991 and gold is $2,394.'],
+    views: [
+      { who: 'Jerome Powell', role: 'Fed Chair, press conference', when: '31 Jul 2024', tone: 'MIX', text: 'The Fed keeps rates the same but is getting closer to cutting. "It\'s neither an overheating economy nor is it a sharply weakening economy."' },
+      { who: 'Scott Rubner', role: 'Strategist, Goldman Sachs', when: '17 Jul 2024', tone: 'CAUT', text: 'Warns that "the index is on the precipice of a summer correction" (a fall of 10% or more).' },
+      { who: 'C.C. Wei', role: 'Chairman and CEO, TSMC', when: '18 Jul 2024', tone: 'BULL', text: 'Says demand for AI chips is strong. "The supply continues to be pretty tight, all the way through 2025."' }],
+    ask: 'Is this the start of a recession, or a panic? What would you need to see before you buy?',
+    after: [
+      'The next day the Nikkei bounced back 10.2%. On 18 September the Fed cut its rate by 0.50 points, to 4.75-5.00%.',
+      'Over the next 8 months stocks rose 9%, Bitcoin 53% and gold 30%. The panic faded within weeks.'] },
+
+  { n: 8, date: '2 Apr 2025', title: 'Tariff day',
+    news: [
+      'This afternoon, after the stock market closed at 4 pm, the US President announced a new set of tariffs (taxes on imports) on most countries. The closing prices you see are from just BEFORE the news. In real life, prices moved the next day.',
+      'A 10% tariff on all countries starts 5 April. Higher rates start 9 April: China 34% (on top of older tariffs), Taiwan 32%, Japan 24%, India 26%, the EU 20%.',
+      'Before the news, the S&P 500 closed at 5,671 (+0.7%), about 8% below its February record. Gold had just set a new record of $3,149 on 1 April; its afternoon price today is $3,120.',
+      'The Fed rate is 4.25-4.50%. The 10-year yield is 4.20%. Bitcoin is $82,486.',
+      'Nobody knows yet how other countries will react.'],
+    views: [
+      { who: 'Bruce Kasman', role: 'Chief global economist, J.P. Morgan', when: '12 Mar 2025', tone: 'CAUT', text: 'Raises his odds of a US recession to about 40%, and says 50% or more if the April tariffs hurt fully. "Where we stand now is with a heightened concern about the U.S. economy."' },
+      { who: 'Jerome Powell', role: 'Fed Chair, press conference', when: '19 Mar 2025', tone: 'MIX', text: 'Says price rises from tariffs might be temporary and calls that "kind of the base case". The Fed keeps its rate unchanged because the effects are unclear.' },
+      { who: 'Goldman Sachs', role: 'Commodities research, gold forecast', when: '26 Mar 2025', tone: 'BULL', text: 'Raises its end-2025 gold forecast to $3,300, from $3,100. It sees central-bank buying and money flowing into gold funds.' }],
+    ask: 'The tariffs were announced after the close. Do you protect yourself before the market reacts, or do you wait?',
+    after: [
+      'On 3 April the S&P 500 fell 4.8%, and on 4 April 6%. Its low close was 4,983 on 8 April, 19% below the February record. On 9 April the higher tariffs were paused for 90 days and the S&P jumped 9.5%. On 27 June it set a new record close.',
+      'Gold kept setting records and ended 2025 near $4,368. Bitcoin hit a record of about $126,000 on 6 October, then fell to $87,509 by 31 December, about 30% below its October peak close.'] }
+];
+
+/* Traditional Chinese (Taiwan) version of Content + labels (v2, 2020-2025) */
+const ContentZh = [
+  { title: '全世界按下暫停鍵',
+    news: ['新冠肺炎（COVID-19）正在全球蔓延，許多國家封鎖邊境，要求民眾待在家。',
+      '股市快速下跌。標普 500 今天收在 2,237 點，比 2 月 19 日的歷史高點 3,386 點低了 34%。',
+      '今天早上開盤前，聯準會（Fed）宣布會繼續買進公債和房貸債券，「金額依需要而定」，沒有固定上限，所以媒體稱它為「無限量化寬鬆」（Fed 創造資金來買債券）。聯準會也推出新計畫，貸款給企業。',
+      '聯準會的利率已經接近零（0 到 0.25%）。10 年期公債殖利率是 0.76%。',
+      '黃金每盎司 1,525 美元。比特幣約 6,400 美元。'],
+    views: [
+      { who: '聯準會 (Federal Reserve)', role: '美國央行，聲明', text: '表示「承諾動用所有工具」支持美國經濟，需要買多少債券就買多少。' },
+      { who: '艾克曼 (Bill Ackman)', role: '避險基金經理人，Pershing Square', text: '呼籲總統封國 30 天。他認為短暫而強力的封鎖，勝過漫長而混亂的拖延。他說：「唯一的答案，就是未來 30 天關閉整個國家。」' },
+      { who: '席格爾 (Jeremy Siegel)', role: '華頓商學院教授', text: '短期很擔心，並說「我們需要大膽的措施」。他認為這次復甦可能比 2008 年更快。' }],
+    ask: '股票五週內跌了 34%，聯準會也出手了。你會買進，還是再等等？',
+    after: ['今天是這波崩跌的最低收盤價。3 月 27 日，美國國會通過約 2 兆美元的紓困方案（CARES 法案）。', '8 月 18 日標普 500 創下新高。到 2021 年 1 月，它比今天高出 69%，比特幣則高出 422%。'] },
+
+  { title: 'Reddit 散戶挑戰華爾街',
+    news: ['GameStop（GME）是一家電玩遊戲連鎖店。一群散戶在 Reddit 論壇上組織起來買進它的股票。押注股價會下跌的避險基金（放空者）虧了很多錢。',
+      '今天 GME 開盤 265 美元，一度摸到 483 美元，收在 193.60 美元，昨天則是 347.51 美元。',
+      'Robinhood 和其他券商限制客戶買進 GME、AMC 等股票，但客戶仍然可以賣出。Robinhood 說，這是因為清算所提高了保證金要求。',
+      '整體股市並沒有崩跌：標普 500 上漲 1%，收在 3,787 點，比 2020 年 3 月的低點高 69%。',
+      '比特幣是 33,466 美元，是 2020 年 3 月的 5 倍多。聯準會利率 0 到 0.25%。黃金 1,854 美元。'],
+    views: [
+      { who: '馬斯克 (Elon Musk)', role: '特斯拉、SpaceX 執行長', text: '發推文「Gamestonk!!」，並附上正在炒作 GameStop 的 Reddit 論壇連結。之後股價在盤後交易大漲。' },
+      { who: '貝瑞 (Michael Burry)', role: '投資人，Scion Asset Management', text: '說這種交易「不自然、瘋狂又危險」，並請美國證券管理機構（SEC）調查。' },
+      { who: 'Chamath Palihapitiya', role: '創投家', text: '先買進 GameStop 的買權，然後說他當天早上已經賣掉。他也為散戶辯護，反對華爾街的批評。' }],
+    ask: '股價被社群媒體上的一群人推動。這是投資，還是一場遊戲？會怎麼結束？',
+    after: ['2 月 18 日，美國眾議院舉行「Game Stopped?」聽證會，Robinhood、Citadel、Melvin Capital 和 Reddit 的負責人都出席作證。', 'GameStop 的股價很快大幅下跌。接下來 9 個月，股票上漲 23%，比特幣上漲 94%。'] },
+
+  { title: '通膨創下 31 年新高',
+    news: ['今天早上美國政府公布，10 月的消費者物價比一年前上漲 6.2%，是自 1990 年 11 月以來 12 個月漲幅最大的一次。',
+      '股市小幅回落：標普 500 收在 4,647 點（−0.8%），略低於 11 月 8 日的歷史收盤高點。',
+      '比特幣今天創下約 69,000 美元的新高，當日收盤價是 64,995 美元。',
+      '11 月 3 日聯準會開始放慢買債。它仍然說高通膨是「暫時性的」，利率是 0 到 0.25%。',
+      '10 年期公債殖利率是 1.56%。黃金 1,859 美元。'],
+    views: [
+      { who: '鮑爾 (Jerome Powell)', role: '聯準會主席', text: '聯準會開始放慢買債，但還不是升息的時候。他說：「暫時性」這個詞，大家有不同的理解。' },
+      { who: '桑默斯 (Larry Summers)', role: '哈佛大學教授，前美國財政部長', text: '說聯準會任由通膨升溫。如果通膨加速，各國央行幾乎沒有讓經濟「軟著陸」的成功紀錄。' },
+      { who: '凱西·伍德 (Cathie Wood)', role: 'ARK Invest 創辦人', text: '不同意「通膨失控」的警告。她預期假期過後，物價壓力會減輕。' }],
+    ask: '通膨 6.2%，聯準會說是暫時的。你相信誰？你還要繼續持有風險資產嗎？',
+    after: ['12 月 15 日聯準會拿掉「暫時性」一詞，並加快結束買債。2022 年 1 月 3 日，標普 500 創下長期下跌前的最後一個收盤新高。', '到 2022 年 3 月，比特幣已下跌 37%。到 2022 年 11 月，它的日收盤價比 2021 年 11 月的高點收盤價低了約 77%。'] },
+
+  { title: '聯準會三年來首度升息',
+    news: ['今天下午 2:00，聯準會把利率調升 0.25 個百分點，到 0.25 到 0.50%。這是 2018 年 12 月以來第一次升息。有一位委員想升更多（0.50）。新利率明天起生效。',
+      '聯準會預告還會再升：官員的預測顯示，2022 年大約會升息七次。',
+      '俄羅斯 2 月 24 日入侵烏克蘭，油價大漲。布蘭特原油 3 月 8 日結算價 127.98 美元，現在正在回落。',
+      '今天股市上漲：標普 500 上漲 2.2%，收在 4,358 點，比 1 月 3 日的歷史收盤高點低 9%。',
+      '10 年期公債殖利率是 2.19%，11 月時是 1.56%。比特幣 41,144 美元，黃金 1,913 美元。'],
+    views: [
+      { who: '鮑爾 (Jerome Powell)', role: '聯準會主席，記者會', text: '說「未來一年出現衰退的機率並不特別高」。他認為經濟承受得起更高的利率。' },
+      { who: '席格爾 (Jeremy Siegel)', role: '華頓商學院教授', text: '認為聯準會太慢了。他希望第一次升息就多於 0.25。他說：「他們得做得比這多很多。」' },
+      { who: '伊拉里安 (Mohamed El-Erian)', role: '經濟學家，安聯（Allianz）', text: '說「聯準會太晚動手了，已經沒有好的政策選項」。他不認為經濟承受得起升息七次。' }],
+    ask: '聯準會打算升息很多次，但今天股市卻上漲。壞消息是不是已經反映在價格裡了？',
+    after: ['聯準會 5 月升息 0.50、6 月升息 0.75。美國通膨在 6 月達到 9.1%，是 1981 年以來最高。', '標普 500 在 2022 年 10 月 12 日跌到收盤最低點 3,577。債券也下跌：持有 7 到 10 年期美國公債的基金，這段期間虧了 9%，因為殖利率上升。'] },
+
+  { title: '鮑爾暗示放慢升息',
+    news: ['今天約下午 1:30，聯準會主席鮑爾發表演說。他說最快 12 月就可以放慢升息的速度。但他也說，利率會維持高檔一段時間。',
+      '股市大漲：標普 500 上漲 3.1%，收在 4,080 點；納斯達克上漲 4.4%。標普比 10 月的低點（3,577）高 14%，但仍比 2022 年 1 月的高點低 15%。',
+      '聯準會利率現在是 3.75 到 4.00%，3 月時是 0 到 0.25%。短期國庫券的利率是 4.37%，比 10 年期殖利率（3.68%）還高。',
+      '比特幣是 17,169 美元，比 2021 年 11 月的高點低約 75%。11 月 11 日，大型加密貨幣交易所 FTX 申請破產。',
+      '同一天，OpenAI 公司推出免費的聊天機器人 ChatGPT。當天對市場沒有明顯影響。黃金 1,754 美元。'],
+    views: [
+      { who: '鮑爾 (Jerome Powell)', role: '聯準會主席，布魯金斯學會演說', text: '聯準會很快可以「放慢升息的步調」。但通膨仍然高得多，最後的利率高點會比預期更高。' },
+      { who: '貝瑞 (Michael Burry)', role: '投資人，Scion Asset Management', text: '說軟著陸的期望太樂觀：「所以我們真的要面對一場持續多年的衰退。」' },
+      { who: '凱西·伍德 (Cathie Wood)', role: 'ARK Invest 創辦人', text: '說 FTX 風波會淘汰脆弱的加密專案。「我們認為，比特幣走出這場風暴後會更好。」' }],
+    ask: '最糟的時候過去了嗎？還是這只是一次更大下跌中的反彈？',
+    after: ['12 月 14 日聯準會把利率升到 4.25 到 4.50%。OpenAI 說 ChatGPT 五天就有 100 萬使用者。GPT-4 在 2023 年 3 月推出。', '2022 年 10 月的低點，後來證明是標普 500 的谷底。三個月後，股票下跌 5%，但比特幣上漲 18%，黃金上漲 6%。'] },
+
+  { title: '一家銀行一夜倒閉',
+    news: ['加州監管機關今天關閉矽谷銀行（SVB），美國存款保險公司（FDIC）接管。SVB 有 2,090 億美元資產，許多科技新創公司在這裡開戶。',
+      '這是一場擠兌。3 月 9 日，客戶一天內想提領約 420 億美元。每位存款人只有前 25 萬美元受保障，目前沒有人知道超過的部分能不能拿回來。',
+      '股市下跌：標普 500 下跌 1.5%，收在 3,862 點，區域銀行股基金下跌 4.4%。資金湧入政府公債：10 年期殖利率從前一天的 3.91% 降到 3.70%。',
+      '3 月 7 日鮑爾才說利率可能要升得比原先計畫更高。聯準會利率是 4.50 到 4.75%。',
+      '比特幣 20,187 美元，黃金 1,861 美元。'],
+    views: [
+      { who: '鮑爾 (Jerome Powell)', role: '聯準會主席，參議院作證', text: '說數據比預期強，所以利率高點可能更高。如果需要，他準備升得更快。他完全沒有提到銀行的壓力。' },
+      { who: '艾克曼 (Bill Ackman)', role: '避險基金經理人，Pershing Square', text: '警告 SVB 倒閉「可能摧毀經濟中一個重要的長期動力」，並呼籲政府出手救援。' },
+      { who: '貝克 (Greg Becker)', role: 'SVB 執行長，對投資人的電話會議', text: '請客戶保持冷靜：「我們現在請你們不要恐慌。」銀行隔天就被關閉了。' }],
+    ask: '一家銀行一夜之間倒閉。這只是一家銀行的問題，還是危機的開始？你的錢放在哪裡才安全？',
+    after: ['3 月 12 日星期日，第二家銀行 Signature Bank 也被關閉。政府宣布 SVB 的存款人都會拿回存款，聯準會也推出新的緊急貸款計畫（BTFP）。', '3 月 19 日瑞銀同意收購瑞士信貸。First Republic 銀行在 5 月初倒閉。但 17 個月後，股票上漲 34%，比特幣上漲 167%，黃金上漲 29%。'] },
+
+  { title: '一天之內的全球股災',
+    news: ['日本日經指數今天下跌 12.4%，是 1987 年以來最糟的一天。台灣加權指數下跌 8.35%，是有紀錄以來單日最大跌幅（以百分比計）。台積電、三星、SK 海力士各跌約 10%。',
+      '許多人把原因歸給兩件事。一是 8 月 2 日星期五的美國就業報告不佳（新增 11.4 萬個工作，失業率升到 4.3%）。二是 7 月 31 日日本央行升息，日圓走強，借便宜日圓去買其他資產的投資人（「日圓套利交易」）被迫賣出。',
+      '美國方面，標普 500 下跌 3.0%，收在 5,186 點。恐慌指數 VIX 收在 38.57，是近四年來最高的收盤值。',
+      '聯準會利率是 5.25 到 5.50%。7 月 31 日鮑爾說，9 月有可能降息。10 年期殖利率是 3.78%。',
+      '比特幣 53,991 美元，黃金 2,394 美元。'],
+    views: [
+      { who: '鮑爾 (Jerome Powell)', role: '聯準會主席，記者會', text: '聯準會維持利率不變，但愈來愈接近降息。他說：「這既不是過熱的經濟，也不是急劇轉弱的經濟。」' },
+      { who: '魯伯納 (Scott Rubner)', role: '高盛策略師', text: '警告「指數正處於夏季修正的邊緣」（修正指下跌 10% 以上）。' },
+      { who: '魏哲家 (C.C. Wei)', role: '台積電董事長暨執行長', text: '說 AI 晶片需求強勁：「供給一直很吃緊，會持續到 2025 年。」' }],
+    ask: '這是衰退的開始，還是一次恐慌？你需要看到什麼訊號才敢買進？',
+    after: ['隔天日經指數反彈 10.2%。9 月 18 日聯準會降息 0.50 個百分點，到 4.75 到 5.00%。', '接下來 8 個月，股票上漲 9%，比特幣上漲 53%，黃金上漲 30%。這場恐慌幾週內就平息了。'] },
+
+  { title: '關稅日',
+    news: ['今天下午 4 點股市收盤後，美國總統宣布對大多數國家課徵新關稅（進口稅）。你看到的收盤價是在宣布「之前」。現實中，價格是在隔天才大幅變動。',
+      '所有國家先課 10% 關稅，4 月 5 日起生效。更高的稅率 4 月 9 日起生效：中國 34%（加上原有關稅）、台灣 32%、日本 24%、印度 26%、歐盟 20%。',
+      '消息公布前，標普 500 收在 5,671 點（+0.7%），比 2 月的歷史高點低約 8%。黃金 4 月 1 日才剛創下 3,149 美元的新高，今天的下午定盤價是 3,120 美元。',
+      '聯準會利率是 4.25 到 4.50%。10 年期殖利率是 4.20%。比特幣 82,486 美元。',
+      '目前沒有人知道其他國家會如何回應。'],
+    views: [
+      { who: '卡斯曼 (Bruce Kasman)', role: '摩根大通首席全球經濟學家', text: '把美國衰退的機率調高到約 40%，如果 4 月的關稅全面生效，會到 50% 以上。他說：「我們現在對美國經濟的擔憂升高了。」' },
+      { who: '鮑爾 (Jerome Powell)', role: '聯準會主席，記者會', text: '說關稅帶來的物價上漲可能只是暫時的，並稱這是「基本情境」。因為影響還不明朗，聯準會維持利率不變。' },
+      { who: '高盛 (Goldman Sachs)', role: '商品研究部門，金價預測', text: '把 2025 年底金價預測從 3,100 美元調高到 3,300 美元。他們看到各國央行買進，以及資金流入黃金基金。' }],
+    ask: '關稅是在收盤後宣布的。你會在市場反應之前先保護自己，還是等一等？',
+    after: ['4 月 3 日標普 500 下跌 4.8%，4 日又跌 6%。收盤最低點 4,983 點出現在 4 月 8 日，比 2 月的高點低 19%。4 月 9 日較高的關稅暫停 90 天，標普大漲 9.5%。6 月 27 日再創收盤新高。', '黃金持續創高，2025 年底約在 4,368 美元。比特幣 10 月 6 日創下約 126,000 美元的新高，到 12 月 31 日跌到 87,509 美元，比 10 月高點的收盤價低約 30%。'] }
+];
+const Zh = {
+  dates: ['2020年3月23日', '2021年1月28日', '2021年11月10日', '2022年3月16日', '2022年11月30日', '2023年3月10日', '2024年8月5日', '2025年4月2日', '2025年12月31日'],
+  short: ['2020年3月', '2021年1月', '2021年11月', '2022年3月', '2022年11月', '2023年3月', '2024年8月', '2025年4月', '2025年12月'],
+  span: ['10個月', '9個月', '4個月', '8個月', '3個月', '1年5個月', '8個月', '9個月'],
+  fed: ['0–0.25%', '0–0.25%', '0–0.25%', '0–0.25%（今天宣布升息）', '3.75–4.00%', '4.50–4.75%', '5.25–5.50%', '4.25–4.50%', '3.50–3.75%'],
+  assets: [{ name: '股票', sub: '標普 500' }, { name: '比特幣', sub: 'BTC 價格' }, { name: '債券', sub: '美國公債' }, { name: '黃金', sub: '金價' }, { name: '現金', sub: '短期國庫券' }],
+  bots: { sp: '買進並持有標普 500', eq: '平均分配（各 20%）', cash: '只持有現金', time: '完美事後諸葛（每回合都選最好的資產）' },
+  types: {
+    storm: { name: '暴風雨偵測者', line: '你在 2022 年下跌之前就降低了風險。', lesson: '在價格還接近歷史高點時（2021 年 11 月通膨 6.2%），就對警訊採取行動並不容易。但太久不進場也有代價：2023 年之後股票和比特幣都大漲。' },
+    bull:  { name: '牛市騎士', line: '你愛股票和比特幣，也敢騎在浪頭上。', lesson: '高風險在 2020–21 年和 2023–25 年報酬很高，但 2022 年很深：比特幣八個月跌了 58%，股票也下跌。' },
+    safe:  { name: '穩健守門人', line: '你偏好債券、黃金和現金，睡得很安穩。', lesson: '安全資產在危機時能保護你，但你可能錯過大漲。而且債券並非永遠安全：2022 年利率上升時，債券虧了 9%。' },
+    chase: { name: '追趨勢者', line: '你常把錢轉到上一回合的贏家身上。', lesson: '上一期的贏家，不一定是下一期的贏家。比特幣 +422% 之後，接著是 −37% 和 −58%。' },
+    contra:{ name: '逆勢者', line: '你常買進剛下跌的資產，或賣出剛上漲的資產。', lesson: '逆著群眾走有時有效，但困難的是抓時機。' },
+    busy:  { name: '忙碌交易員', line: '你一回合又一回合地大幅調整配置。', lesson: '每次調整都要有好理由。現實中，交易也要花成本。' },
+    mix:   { name: '穩定配置者', line: '你分散投資，調整也很慢。', lesson: '分散投資不會每回合都贏，但能避開最糟的意外。' }
+  }
+};
+
+(function () {
+  'use strict';
+  Content.forEach((r, i) => { r.zh = ContentZh[i]; });
+  const C = Core, R = Content, A = C.ASSETS;
+  const $ = s => document.querySelector(s);
+  const app = $('#app');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const teacher = /teacher/.test(location.hash);
+  const KEY = 'fmtm-v2', LKEY = 'fmtm-lang';
+  let L = 'en';
+  try { if (localStorage.getItem(LKEY) === 'zh') L = 'zh'; } catch (e) {}
+  const zh = () => L === 'zh';
+  const T = (en, z) => (zh() ? z : en);
+  let S = { name: '', allocs: [], round: 0, screen: 'intro' };
+  let timer = null, w = C.CASH_ALL.slice(), locked = false, view = 'intro';
+
+  /* ---- language helpers ---- */
+  const aName = j => (zh() ? Zh.assets[j].name : A[j].name);
+  const aSub = j => (zh() ? Zh.assets[j].sub : A[j].sub);
+  const rc = (i, k) => (zh() ? R[i].zh[k] : R[i][k]);
+  const date = i => (zh() ? Zh.dates[i] : C.DATES[i]);
+  const shortD = i => (zh() ? Zh.short[i] : C.SHORT[i]);
+  const botName = b => (zh() ? Zh.bots[b.id] : b.name);
+  const typeInfo = k => (zh() ? Zh.types[k] : C.TYPES[k]);
+  const TONE = { BULL: ['BULLISH', '看多'], CAUT: ['CAUTIOUS', '謹慎'], MIX: ['MIXED', '中立'] };
+  const CH = ["'20/03", "'21/01", "'21/11", "'22/03", "'22/11", "'23/03", "'24/08", "'25/04", "'25/12"];
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify({ name: S.name, allocs: S.allocs, round: S.round, screen: S.screen })); } catch (e) {} }
+  function load() { try { const j = JSON.parse(localStorage.getItem(KEY) || 'null'); if (j && Array.isArray(j.allocs)) return j; } catch (e) {} return null; }
+  function clear() { try { localStorage.removeItem(KEY); } catch (e) {} }
+
+  function tape(items) { const h = items.map(t => '<span>' + t + '</span>').join(''); $('#tape').innerHTML = h + h; }
+  function tapeIntro() { tape(T(['FUND MANAGER TIME MACHINE', '2020 ▶ 2025', '8 DATES', 'TAKE YOUR TIME', 'HINDSIGHT IS 20/20'], ['基金經理時光機', '2020 ▶ 2025', '8 個時間點', '慢慢讀，慢慢想', '事後諸葛很容易'])); }
+  function tapeMoves(i) { tape(A.map((a, j) => { const r = C.RET[i][j]; return (zh() ? aName(j) : aName(j).toUpperCase()) + ' <b class="' + (r >= 0 ? 'up' : 'dn') + '">' + (r >= 0 ? '▲' : '▼') + ' ' + C.pct(r) + '</b>'; })); }
+  const coin = n => '◎ ' + C.fmt(n);
+  const cls = r => (r >= 0 ? 'up' : 'dn');
+  const up = s => (zh() ? s : s.toUpperCase());
+  const chipsOf = a => '<div class="chips">' + a.map((v, j) => (v ? '<span style="--c:' + A[j].color + '">' + aName(j) + ' ' + v + '%</span>' : '')).join('') + '</div>';
+
+  function setLang(l) {
+    if (l === L) return;
+    if (view === 'intro' && $('#nick')) S.name = $('#nick').value;
+    L = l; try { localStorage.setItem(LKEY, l); } catch (e) {}
+    document.documentElement.lang = zh() ? 'zh-Hant' : 'en';
+    syncLang();
+    ({ intro: intro, school: school, round: roundView, reveal: reveal, end: end })[view]();
+  }
+  function syncLang() { $('#l-en').className = zh() ? '' : 'on'; $('#l-zh').className = zh() ? 'on' : ''; }
+  $('#l-en').onclick = () => setLang('en'); $('#l-zh').onclick = () => setLang('zh');
+
+  /* ---------- intro ---------- */
+  function intro() {
+    view = 'intro'; clearInterval(timer); tapeIntro(); syncLang();
+    const saved = load(); const resume = saved && (saved.round > 0 || saved.screen === 'end');
+    app.innerHTML =
+      '<div class="board hero"><div class="lbl">' + T('TRADING HALL · OPEN', '交易大廳 · 開市') + '</div><h1>' + T('Fund Manager<br>Time Machine', '基金經理<br>時光機') + '</h1>' +
+      '<p>' + T('You manage ◎ 1,000,000 of virtual money. You travel back to 8 real dates between 2020 and 2025, years you lived through.', '你管理 ◎ 1,000,000 的虛擬資金，要回到 2020 到 2025 年之間 8 個真實的日期，那是你親身經歷過的年代。') + '</p>' +
+      '<ul><li>' + T('Read the news and what experts said that day.', '讀當天的新聞，看專家怎麼說。') + '</li><li>' + T('Split your money: stocks, Bitcoin, bonds, gold, cash.', '把錢分配到股票、比特幣、債券、黃金、現金。') + '</li><li>' + T('Take your time. When you lock in, time passes and prices move.', '慢慢來，不用趕。你按下「鎖定」之後，時間會流逝，價格也會變動。') + '</li></ul>' +
+      '<p class="note">' + (zh() ? BORN[1] : BORN[0]) + '</p><p>' + T('You will not know what happens next. Real fund managers never do.', '你不會知道接下來會發生什麼，真正的基金經理也一樣。') + '</p>' +
+      '<input type="text" id="nick" maxlength="16" placeholder="' + T('Your nickname', '你的暱稱') + '" value="' + esc(S.name || (resume ? saved.name : '')) + '" aria-label="' + T('Your nickname', '你的暱稱') + '">' +
+      '<button class="btn" id="go">' + T('Next: Asset School ▶', '下一步：資產學堂 ▶') + '</button>' +
+      (resume ? '<button class="btn ghost" id="resume" style="margin-top:10px">' + T('Continue my last game', '繼續上次的遊戲') + '</button>' : '') +
+      '</div><p class="note">' + T('Learning game. Not investment advice. All dates, news and price moves are real (returns are rounded).', '學習用遊戲，不是投資建議。所有日期、新聞和價格變動都是真實的（報酬已四捨五入）。') + '</p>';
+    $('#go').onclick = () => { S = { name: ($('#nick').value || '').trim() || T('Player', '玩家'), allocs: [], round: 0, screen: 'round' }; save(); school(); };
+    if (resume) $('#resume').onclick = () => { S = { name: saved.name || T('Player', '玩家'), allocs: saved.allocs, round: saved.round, screen: saved.screen }; if (S.screen === 'end') end(); else if (S.screen === 'reveal') reveal(); else startRound(); };
+  }
+
+
+  /* ---------- asset school ---------- */
+  function schoolHTML() {
+    const D = [
+      [T('A stock is a small piece of a company. Here we use the S&P 500, the 500 biggest US companies. Prices rise when companies earn more, and also when people feel hopeful. They can fall fast.', '股票是一家公司的一小部分。這裡用標普 500，也就是美國 500 家最大的公司。公司賺得更多、或大家有信心時，價格會上漲；也可能下跌得很快。')],
+      [T('Bitcoin is a digital coin. No company or government stands behind it. People trade it online, all day and night. It is new and wild: its price can double or lose half in a few months.', '比特幣是一種數位貨幣，背後沒有公司或政府。大家在網路上 24 小時買賣。它很新也很狂野：幾個月內價格可能翻倍，也可能腰斬。')],
+      [T('A bond is a loan. You lend money to a government (or a company) and get interest. Here we use US government bonds. When interest rates go up, the price of older bonds goes down.', '債券是一筆借款。你把錢借給政府（或公司），並收取利息。這裡用美國政府公債。利率上升時，舊債券的價格會下跌。')],
+      [T('Gold is a metal people have valued for thousands of years. It pays no interest. People often buy it when they are afraid of trouble or of rising prices.', '黃金是人類珍視了數千年的金屬，不會產生利息。大家常在擔心出事、或物價上漲時買進黃金。')],
+      [T('Here, cash means short-term US government bills. It is very safe and pays interest, but it grows slowly, especially when interest rates are near zero.', '這裡的現金指的是短期美國國庫券。非常安全，也有利息，但成長很慢，尤其是利率接近零的時候。')]
+    ];
+    const G = [
+      [T('Fed', '聯準會（Fed）'), T('The US central bank. It sets the main interest rate for the US.', '美國的央行，決定美國的基本利率。')],
+      [T('Rate hike', '升息'), T('The Fed makes borrowing more expensive, to cool the economy and slow down rising prices.', '聯準會讓借錢變得更貴，為了替經濟降溫、減緩物價上漲。')],
+      [T('Inflation (CPI)', '通貨膨脹（CPI）'), T('Prices rising over time. CPI is the number that measures it, for example "+6.2% from a year ago".', '物價隨時間上漲。CPI（消費者物價指數）就是衡量它的數字，例如「比一年前上漲 6.2%」。')],
+      [T('Yield', '殖利率'), T('The yearly interest a bond pays, as a % of its price. When the yield goes up, the bond price goes down.', '債券每年支付的利息，占價格的百分比。殖利率上升，債券價格就下跌。')],
+      [T('QE (quantitative easing)', '量化寬鬆（QE）'), T('The Fed creates money to buy bonds, to push interest rates down and calm the market.', '聯準會創造資金去買債券，壓低利率、穩定市場。')],
+      [T('Recession', '經濟衰退'), T('The economy shrinks and many people lose jobs.', '經濟萎縮，很多人失業。')]
+    ];
+    return '<div class="board"><div class="lbl">' + T('THE FIVE ASSETS', '五種資產') + '</div>' +
+      A.map((x, j) => '<div class="view" style="border-left:3px solid ' + x.color + ';padding-left:10px"><div class="who">' + aName(j) + ' <span class="note">· ' + aSub(j) + '</span></div><p>' + esc(D[j][0]) + '</p></div>').join('') + '</div>' +
+      '<div class="board"><div class="lbl">' + T('WORDS YOU WILL SEE', '你會看到的名詞') + '</div>' +
+      G.map(g => '<div class="view"><div class="who">' + esc(g[0]) + '</div><p>' + esc(g[1]) + '</p></div>').join('') +
+      '<p class="note">' + T('Risky assets (stocks, Bitcoin) can rise a lot and fall a lot. Safer ones move less, but even "safe" assets can lose money.', '風險較高的資產（股票、比特幣）可能大漲也可能大跌；較安全的資產波動小，但就算是「安全」的資產也可能賠錢。') + '</p></div>';
+  }
+  function school() {
+    view = 'school'; clearInterval(timer); tapeIntro(); syncLang(); S.screen = 'school'; save();
+    app.innerHTML = '<div class="top"><div class="rd">' + T('ASSET SCHOOL', '資產學堂') + '</div></div><h2 class="head">' + T('Five assets, in plain words', '五種資產，用白話說明') + '</h2>' + schoolHTML() +
+      '<button class="btn" id="startg">' + T('Start Round 1 ▶', '開始第 1 回合 ▶') + '</button><p class="note">' + T('You can open this page again during the game.', '遊戲進行中也可以再打開這一頁。') + '</p>';
+    $('#startg').onclick = () => { S.screen = 'round'; save(); startRound(); };
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- round ---------- */
+  function lastAlloc() { const e = C.effective(S.allocs, S.round); return e.length ? e[e.length - 1] : C.CASH_ALL; }
+  function wealthNow() { return C.path(S.allocs, S.round)[S.round]; }
+  function startRound() {
+    S.screen = 'round'; save();
+    w = lastAlloc().slice(); locked = false;
+    roundView();
+  }
+  function tiles(i) {
+    const Lv = C.LV[i], prev = i === 0 ? null : C.RET[i - 1];
+    const since = j => (prev ? '<span class="' + cls(prev[j]) + '">' + C.pct(prev[j]) + '</span> ' + T('since last date', '較上次') : T('start of game', '遊戲起點'));
+    const t = (j, level, pre) => '<div class="tile" style="--c:' + A[j].color + '"><b>' + up(aName(j) + ' · ' + aSub(j)) + '</b><em>' + level + '</em><small>' + (pre || '') + since(j) + '</small></div>';
+    return '<div class="tiles">' + t(0, Lv.sp.toLocaleString('en-US', { maximumFractionDigits: 0 })) + t(1, '$' + Lv.btc.toLocaleString('en-US', { maximumFractionDigits: 0 })) + t(2, Lv.y10.toFixed(2) + '%', T('10-yr yield · ', '10 年期殖利率 · ')) + t(3, '$' + Lv.gold.toLocaleString('en-US', { maximumFractionDigits: 0 })) +
+      '<div class="tile wide" style="--c:' + A[4].color + '"><b>' + T('CASH · FED INTEREST RATE (TARGET RANGE)', '現金 · 聯準會利率（目標區間）') + '</b><em>' + (zh() ? Zh.fed[i] : Lv.fed) + '</em><small>' + (prev ? '<span class="' + cls(prev[4]) + '">' + C.pct(prev[4]) + '</span> ' + T('from T-bills since last date', '國庫券報酬，較上次') : T('start of game', '遊戲起點')) + '</small></div></div>';
+  }
+  function chart(k) {
+    const idx = C.cumIndex(k), W = 320, H = 150, pl = 8, pr = 8, pt = 10, pb = 22;
+    const all = [].concat.apply([], idx); const lo = Math.min.apply(null, all) * 0.92, hi = Math.max.apply(null, all) * 1.08;
+    const lg = Math.log, span = lg(hi) - lg(lo);
+    const X = m => pl + (k === 1 ? (W - pl - pr) / 2 : (m * (W - pl - pr)) / (k - 1)), Y = v => pt + (1 - (lg(v) - lg(lo)) / span) * (H - pt - pb);
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + T('Value of 100 coins in each asset since Mar 2020 (log scale)', '2020 年 3 月的 100 元，在各資產中的價值（對數座標）') + '">';
+    s += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + Y(100) + '" y2="' + Y(100) + '" stroke="#2f4470" stroke-dasharray="3 3"/><text x="' + pl + '" y="' + (Y(100) - 3) + '" fill="#8fa3c2" font-size="8">100</text>';
+    idx.forEach((ser, j) => { s += '<polyline points="' + ser.map((v, m) => X(m) + ',' + Y(v)).join(' ') + '" fill="none" stroke="' + A[j].color + '" stroke-width="2"/><circle cx="' + X(k - 1) + '" cy="' + Y(ser[k - 1]) + '" r="3" fill="' + A[j].color + '"/>'; });
+    for (let m = 0; m < k; m++) s += '<text x="' + X(m) + '" y="' + (H - 6) + '" fill="#8fa3c2" font-size="8" text-anchor="' + (m === k - 1 && k > 1 ? 'end' : m === 0 ? 'start' : 'middle') + '">' + CH[m] + '</text>';
+    return s + '</svg><p class="note" style="margin:4px 0">' + T('Log scale: equal steps up mean equal % growth.', '對數座標：每上升一格，代表相同的成長百分比。') + '</p><div class="chips">' + A.map((a, j) => '<span style="--c:' + a.color + '">' + aName(j) + '</span>').join('') + '</div>';
+  }
+
+  const ME = [
+    ['You were in 高一 (first year of senior high), about 16.','Mask rationing (實名制) was in place.','你讀高一下，約 16 歲。','口罩實名制進行中。'],
+    ['You were in 高二 (second year of senior high), about 17, on winter break.','','你讀高二，約 17 歲，正在放寒假。',''],
+    ['You were in 高三 (third year of senior high), about 17. The 學測 exam was about 10 weeks away.','Netflix released Squid Game two months earlier.','你讀高三上，約 17 歲，離學測約 10 週。','兩個月前，《魷魚遊戲》上線。'],
+    ['You were in 高三, second semester, about 18. Your 學測 scores were just out and you were choosing universities.','Russia invaded Ukraine three weeks earlier.','你讀高三下，約 18 歲，學測成績剛出，正在選校系。','三週前，俄羅斯入侵烏克蘭。'],
+    ['You were in your first year of university (大一), about 18.','OpenAI released ChatGPT around this day.','你讀大一上，約 18 歲。','OpenAI 在這天前後推出 ChatGPT。'],
+    ['You were in the second semester of 大一, about 19.','Schools had just ended the indoor mask rule.','你讀大一下，約 19 歲。','校園剛解除室內口罩規定。'],
+    ['It was summer after your second year of university, about 20.','The Paris Olympics were on. Taiwan won 2 gold medals in total.','現在是大二升大三的暑假，你約 20 歲。','巴黎奧運正在進行，台灣最後共拿 2 金。'],
+    ['You were in the second semester of your third year (大三), about 21.','The US had just announced a 32% tariff on Taiwan.','你讀大三下，約 21 歲。','美國剛宣布對台灣課徵 32% 關稅。'],
+  ];
+  const ME_END = ['You were in your last year of university (大四), about 21. You graduate in June 2026.','Tonight, Taipei 101 held its New Year fireworks.','你讀大四上，約 21 歲，2026 年 6 月畢業。','今晚台北 101 施放跨年煙火。'];
+  const BORN = ['In 2004, the year you were born: Taipei 101 opened on 31 Dec. Bitcoin did not exist yet (it started in 2009). Gold cost about $409 an ounce on average.','2004 年，你出生那一年：台北 101 在 12 月 31 日啟用。那時還沒有比特幣（2009 年才出現）。黃金全年平均每盎司約 409 美元。'];
+  function meMk(a) { return { stage: zh() ? a[2] : a[0], mem: (zh() ? a[3] : a[1]) ? [zh() ? a[3] : a[1]] : [] }; }
+  function meBox(r, a) {
+    a = a || (r && ME[R.indexOf(r)]); if (!a) return '';
+    const m = meMk(a), mem = m.mem;
+    return '<div class="board you"><div class="lbl">' + T('WHERE WERE YOU THEN?', '那時的你在做什麼？') + '</div><p>' + esc(m.stage) + '</p>' + (mem.length ? '<div class="lbl" style="margin-top:10px">' + T('A STORY OF THE TIME', '那時的一件事') + '</div><ul class="news">' + mem.map(n => '<li>' + esc(n) + '</li>').join('') + '</ul>' : '') + '</div>';
+  }
+  function roundView() {
+    view = 'round'; syncLang();
+    const i = S.round, r = R[i];
+    app.innerHTML =
+      '<div class="top"><div class="rd">' + T('ROUND ' + (i + 1) + ' OF 8 · ' + date(i).toUpperCase(), '第 ' + (i + 1) + ' 回合 / 共 8 回合 · ' + date(i)) + '</div></div><div class="grid"><div>' +
+      '<h2 class="head">' + esc(rc(i, 'title')) + '</h2>' +
+      meBox(r) +
+      '<div class="board"><div class="lbl">' + T('NEWS TODAY', '今日新聞') + '</div><ul class="news">' + rc(i, 'news').map(n => '<li>' + esc(n) + '</li>').join('') + '</ul></div>' +
+      '<div class="board"><div class="lbl">' + T('MARKET BOARD', '市場看板') + '</div>' + tiles(i) + '</div>' +
+      '<div class="board"><div class="lbl">' + T('WHAT 100 COINS BECAME SINCE MAR 2020', '2020 年 3 月的 100 元，後來變成多少') + '</div>' + chart(i + 1) + '</div>' +
+      '<div class="board"><div class="lbl">' + T('WHAT EXPERTS SAID', '專家怎麼說') + '</div>' + r.views.map((v, k) => { const vv = zh() ? r.zh.views[k] : v; return '<div class="view"><div class="who">' + esc(vv.who) + '<span class="chip ' + v.tone + '">' + TONE[v.tone][zh() ? 1 : 0] + '</span></div><div class="meta">' + esc(vv.role) + ' · ' + esc(zh() ? v.when.replace(/(\d+) (\w+) (\d+)/, (m, d, mo, y) => y + '年' + ({ Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 })[mo] + '月' + d + '日') : v.when) + '</div><p>' + esc(vv.text) + '</p></div>'; }).join('') + '</div>' +
+      '</div><div><div class="trade" id="trade"></div><details class="board" style="margin-top:12px"><summary>' + T('Asset School (quick reminder)', '資產學堂（快速複習）') + '</summary>' + schoolHTML() + '</details></div></div>';
+    tradeView(); window.scrollTo(0, 0);
+  }
+  function setW(j, v) { if (locked) return; const others = C.sum(w.slice(0, 4)) - w[j]; v = Math.max(0, Math.min(Math.round(v / 5) * 5, 100 - others)); w[j] = v; w[4] = 100 - C.sum(w.slice(0, 4)); refreshTrade(); }
+  function preset(a) { if (locked) return; w = a.slice(); refreshTrade(); }
+  function tradeView() {
+    $('#trade').innerHTML =
+      '<div class="wl"><span class="lbl" style="margin:0">' + T('YOUR MONEY', '你的資金') + '</span><b>' + coin(wealthNow()) + '</b></div><div class="stack" id="stack"></div>' +
+      [0, 1, 2, 3].map(j => '<div class="row" style="--c:' + A[j].color + '"><span class="nm">' + aName(j) + '</span><button data-j="' + j + '" data-d="-5" aria-label="' + T('Less', '減少') + ' ' + aName(j) + '">−</button><input type="range" min="0" max="100" step="5" data-j="' + j + '" aria-label="' + aName(j) + ' %"><button data-j="' + j + '" data-d="5" aria-label="' + T('More', '增加') + ' ' + aName(j) + '">+</button><span class="v" id="v' + j + '"></span></div>').join('') +
+      '<div class="row" style="--c:' + A[4].color + '"><span class="nm">' + aName(4) + '</span><span></span><span class="note">' + T('what is left over', '剩下的錢') + '</span><span></span><span class="v" id="v4"></span></div>' +
+      '<div class="pre"><button id="p1">' + T('Same as last', '同上次') + '</button><button id="p2">' + T('Equal split', '平均分配') + '</button><button id="p3">' + T('All cash', '全部現金') + '</button>' + '' + '</div>' +
+      '<button class="btn" id="lock">' + T('Lock in', '鎖定') + '</button>';
+    document.querySelectorAll('#trade button[data-j]').forEach(b => b.onclick = () => { const j = +b.dataset.j; setW(j, w[j] + +b.dataset.d); });
+    document.querySelectorAll('#trade input[type=range]').forEach(r => r.oninput = () => setW(+r.dataset.j, +r.value));
+    $('#p1').onclick = () => preset(lastAlloc()); $('#p2').onclick = () => preset([20, 20, 20, 20, 20]); $('#p3').onclick = () => preset(C.CASH_ALL);
+    $('#lock').onclick = lock; refreshTrade();
+  }
+  function refreshTrade() {
+    $('#stack').innerHTML = w.map((v, j) => '<i style="width:' + v + '%;background:' + A[j].color + '"></i>').join('');
+    w.forEach((v, j) => { $('#v' + j).textContent = v + '%'; if (j < 4) document.querySelector('#trade input[data-j="' + j + '"]').value = v; });
+  }
+  function lock() { if (locked) return; locked = true; clearInterval(timer); S.allocs[S.round] = w.slice(); S.screen = 'reveal'; save(); reveal(); }
+
+  /* ---------- reveal ---------- */
+  function standings(upto) {
+    const rows = [{ name: S.name || T('You', '你'), me: true, v: C.path(S.allocs, upto)[upto] }];
+    C.BOTS.forEach(b => rows.push({ name: botName(b), bot: true, v: C.path(b.allocs, upto)[upto] }));
+    return rows.sort((a, b) => b.v - a.v);
+  }
+  function reveal() {
+    view = 'reveal'; clearInterval(timer); syncLang();
+    const i = S.round, ret = C.RET[i], a = C.effective(S.allocs, i + 1)[i];
+    const before = C.path(S.allocs, i)[i], after = C.path(S.allocs, i + 1)[i + 1], gain = Math.round((after / before - 1) * 1000) / 10;
+    tapeMoves(i);
+    const best = Math.max.apply(null, ret), maxAbs = Math.max.apply(null, ret.map(Math.abs)) || 1;
+    const span = zh() ? Zh.span[i] : C.SPAN[i];
+    app.innerHTML =
+      '<div class="top"><div class="rd">' + T('ROUND ' + (i + 1) + ' OF 8 · RESULT', '第 ' + (i + 1) + ' 回合 · 結果') + '</div><div class="rd">' + up(shortD(i)) + ' ▶ ' + up(shortD(i + 1)) + '</div></div>' +
+      '<div class="board rev"><div class="lbl">' + T('TIME PASSES: ' + span.toUpperCase() + ' LATER', '時間流逝：' + span + '後') + '</div>' +
+      A.map((x, j) => '<div class="asset"><span class="nm">' + aName(j) + '</span><div class="t"><i data-r="' + ret[j] + '" style="' + (ret[j] >= 0 ? 'left:50%' : 'right:50%') + ';width:0;background:' + (ret[j] >= 0 ? 'var(--up)' : 'var(--down)') + '"></i><span style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#3a4f7c"></span></div><span class="n ' + cls(ret[j]) + '">' + C.pct(ret[j]) + (ret[j] === best ? ' ★' : '') + '</span></div>').join('') +
+      '<p class="note">' + T('★ best asset this round. Stock returns are price only (no dividends). Bond and cash returns include interest.', '★ 本回合表現最好的資產。股票報酬只含價格（不含股息）。債券和現金報酬含利息。') + '</p></div>' +
+      '<div class="board"><div class="lbl">' + T('YOUR RESULT', '你的成績') + '</div><div class="big ' + cls(gain) + '">' + (gain >= 0 ? '+' : '−') + Math.abs(gain).toFixed(1) + '%</div>' +
+      '<div class="sub">' + coin(before) + ' ▶ <b style="color:var(--txt)">' + coin(after) + '</b></div>' + chipsOf(a) + '</div>' +
+      '<div class="board"><div class="lbl">' + T('SCOREBOARD AFTER ROUND ' + (i + 1), '第 ' + (i + 1) + ' 回合後的排行榜') + '</div><table class="lb">' + standings(i + 1).map((r, k) => '<tr class="' + (r.me ? 'me' : '') + '"><td>' + (k + 1) + '</td><td>' + esc(r.name) + (r.bot ? ' <span class="note">' + T('(bot)', '（機器人）') + '</span>' : '') + '</td><td>' + coin(r.v) + '</td></tr>').join('') + '</table></div>' +
+      (teacher ? '<div class="ask"><b>' + T('Ask the class:', '問問全班：') + '</b> ' + esc(rc(i, 'ask')) + '</div>' : '') +
+      '<button class="btn" id="next">' + (i < 7 ? T('Next date ▶', '下一個日期 ▶') : T('See my investor type ▶', '看我的投資人類型 ▶')) + '</button>';
+    requestAnimationFrame(() => setTimeout(() => document.querySelectorAll('.asset .t i').forEach(b => { b.style.width = (Math.abs(+b.dataset.r) / maxAbs * 50) + '%'; }), 60));
+    window.scrollTo(0, 0);
+    $('#next').onclick = () => { if (i < 7) { S.round = i + 1; startRound(); } else { S.screen = 'end'; save(); end(); } };
+  }
+
+  /* ---------- end ---------- */
+  function end() {
+    view = 'end'; clearInterval(timer); tapeIntro(); syncLang();
+    const me = C.path(S.allocs, 8)[8], an = C.analyze(S.allocs), info = typeInfo(an.type), eff = C.effective(S.allocs, 8);
+    const total = Math.round((me / C.START - 1) * 100);
+    const botFinals = C.BOTS.map(b => C.finalOf(b.allocs)), beat = botFinals.filter(v => me > v).length;
+    const rows = [{ name: S.name || T('You', '你'), me: true, v: me }].concat(C.BOTS.map((b, k) => ({ name: botName(b), v: botFinals[k] })), [{ name: botName(C.HINDSIGHT), v: C.finalOf(C.HINDSIGHT.allocs) }]).sort((x, y) => y.v - x.v);
+    const text = T('Fund Manager Time Machine: ' + (S.name || 'I') + ' = ' + info.name + '. Final: ' + coin(me) + ' (' + C.pct(total) + ').', '基金經理時光機：' + (S.name || '我') + ' 是「' + info.name + '」。最終資金 ' + coin(me) + '（' + C.pct(total) + '）。');
+    app.innerHTML =
+      '<div class="card"><div class="k">' + T('YOUR INVESTOR TYPE', '你的投資人類型') + '</div><h2>' + (zh() ? esc(info.name) : esc(info.name).replace('The ', 'The<br>')) + '</h2><p>' + esc(info.line) + '</p>' +
+      '<div class="stats"><div><b class="' + cls(total) + '">' + C.pct(total) + '</b><span>' + T('total result', '總報酬') + '</span></div><div><b>' + an.avgRisk + '%</b><span>' + T('avg. in stocks + Bitcoin', '平均持有股票＋比特幣') + '</span></div><div><b>' + beat + ' / 3</b><span>' + T('bots you beat', '打敗的機器人') + '</span></div></div>' +
+      '<p class="note" style="margin-top:12px">' + esc(info.lesson) + '</p></div>' +
+      meBox(null, ME_END) +
+      '<div class="board"><div class="lbl">' + T('FINAL SCOREBOARD · DEC 2025', '最終排行榜 · 2025 年 12 月') + '</div><table class="lb">' + rows.map((r, k) => '<tr class="' + (r.me ? 'me' : '') + '"><td>' + (k + 1) + '</td><td>' + esc(r.name) + '</td><td>' + coin(r.v) + '</td></tr>').join('') + '</table>' +
+      '<p class="note" style="margin-top:8px">' + T('The "perfect hindsight" player knew the best asset each time. Nobody can: its result is about 70 times the start money, driven by Bitcoin\'s +422% in round 1. There are no trading costs in this game.', '「完美事後諸葛」每次都知道哪個資產最好，但現實中沒有人做得到。它的成績約為本金的 70 倍，主要來自第 1 回合比特幣的 +422%。這個遊戲沒有計入交易成本。') + '</p></div>' +
+      '<div class="board"><div class="lbl">' + T('WHAT REALLY HAPPENED NEXT', '後來實際發生了什麼') + '</div>' + R.map((r, i) => { const bj = C.bestAsset(i); return '<details' + (i === 0 ? ' open' : '') + '><summary>' + (i + 1) + '. ' + date(i) + ' — ' + esc(rc(i, 'title')) + '</summary>' + chipsOf(eff[i]) + '<ul>' + rc(i, 'after').map(t => '<li>' + esc(t) + '</li>').join('') + '</ul><p class="note">' + T('Best asset this round: ' + aName(bj) + ' (' + C.pct(C.RET[i][bj]) + '). Your result: ' + C.pct(Math.round((C.growth(eff[i], i) - 1) * 100)) + '.', '本回合表現最好的資產：' + aName(bj) + '（' + C.pct(C.RET[i][bj]) + '）。你的成績：' + C.pct(Math.round((C.growth(eff[i], i) - 1) * 100)) + '。') + '</p></details>'; }).join('') + '</div>' +
+      '<div class="board"><div class="lbl">' + T('THE BIG IDEA', '重點') + '</div><p style="line-height:1.6;font-size:15px">' + T('Looking back, every turning point looks obvious. At the time, experts disagreed and the news could be read in two ways. That is why diversification and a long-term plan matter.', '回頭看，每個轉折點都顯得很明顯。但在當時，專家意見不一，新聞也可以有兩種解讀。這就是為什麼分散投資和長期計畫很重要。') + '</p></div>' +
+      '<div class="board"><div class="lbl">' + T('DATA NOTES AND SOURCES', '資料說明與來源') + '</div><p class="note">' + T(
+        'Whole-percent returns between the closing prices of nine dates; nothing in between is measured (falls and rebounds inside a period are not shown). Stocks: S&P 500 index price, dividends NOT included (so stocks look slightly worse than real investors\' results). Bitcoin: daily close (00:00-24:00 UTC, CoinMarketCap/Yahoo, checked against Coinbase). Bitcoin trades all day and exchanges differ by about 1% (more in March 2020), so round 1 is "about +420%". Bonds: the iShares 7-10 year Treasury fund (IEF), interest included; a fund, not a single bond. Cash: a 1-3 month T-bill fund (BIL), interest included; a real bank deposit would pay less. Gold: London LBMA afternoon price in US dollars (several dates come from one data source); there was no afternoon price on 31 Dec 2025, so the last one of the year (30 Dec) is used. Fed rate: range in force after the close; the 16 Mar 2022 rise was announced that day and started on 17 March. Dates mix closing times (US 4 pm, London gold 3 pm, Bitcoin midnight UTC). Not included: trading costs, taxes, currency effects (Taiwan investors face TWD), and the fact that nobody can really trade at the exact low. Bots and totals use whole-percent returns, so they differ slightly from exact figures. Some views were said on the decision date itself, and the 2 April 2025 tariffs came after the close. Sources: FRED, Treasury.gov, federalreserve.gov, BLS, Yahoo Finance, StockAnalysis, CoinMarketCap, Coinbase, SD Bullion and MUFG Bullion (LBMA data), AP, Reuters, CNBC, Fortune, Bloomberg, SEC. Not investment advice.',
+        '各日期收盤價之間的整數百分比報酬；期間內的漲跌不在衡量範圍內。股票：標普 500 指數價格，不含股息（所以股票看起來比真實投資人的結果略差）。比特幣：每日收盤價（世界標準時間 00:00–24:00，取自 CoinMarketCap／Yahoo，並用 Coinbase 交叉檢查）。比特幣全天交易，各交易所價格相差約 1%（2020 年 3 月更大），所以第 1 回合是「約 +420%」。債券：iShares 7–10 年期美國公債基金（IEF），含利息；是基金，不是單一債券。現金：1–3 個月期國庫券基金（BIL），含利息；真實的銀行存款利率會更低。黃金：倫敦 LBMA 下午定盤價（美元）；有幾個日期只有單一資料來源。2025 年 12 月 31 日沒有下午定盤價，所以使用該年最後一次（12 月 30 日）。聯準會利率：收盤後生效的區間；2022 年 3 月 16 日的升息是當天宣布、3 月 17 日生效。各資產的收盤時間不同（美股下午 4 點、倫敦黃金下午 3 點、比特幣為世界標準時間午夜）。未計入：交易成本、稅、匯率（台灣投資人還要面對新台幣）、以及沒有人真能剛好在最低點成交。機器人與總成績使用整數百分比，與精確數字略有差異。有些專家說法是在決策日當天發表的，2025 年 4 月 2 日的關稅則是在收盤後才宣布。資料來源：FRED、美國財政部、聯準會、美國勞工統計局、Yahoo Finance、StockAnalysis、CoinMarketCap、Coinbase、SD Bullion 與 MUFG Bullion（LBMA 資料）、美聯社、路透、CNBC、Fortune、彭博、SEC。非投資建議。') + '</p></div>' +
+      '<button class="btn" id="copy">' + T('Copy my result', '複製我的成績') + '</button><button class="btn ghost" id="again" style="margin-top:10px">' + T('Play again', '再玩一次') + '</button>';
+    $('#copy').onclick = () => { const b = $('#copy'); const done = ok => { b.textContent = ok ? T('Copied!', '已複製！') : text; }; try { navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); } catch (e) { done(false); } };
+    $('#again').onclick = () => { clear(); S = { name: S.name, allocs: [], round: 0, screen: 'intro' }; intro(); };
+    window.scrollTo(0, 0);
+  }
+
+  window.__fmtm = { S: () => S, startRound, intro, school, reveal, end, setLang };
+  document.documentElement.lang = zh() ? 'zh-Hant' : 'en';
+  intro();
+})();
+
+</script>
+</body>
+</html>
