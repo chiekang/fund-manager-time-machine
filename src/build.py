@@ -1,0 +1,5 @@
+core=open('core.js').read().replace("if (typeof module !== 'undefined') module.exports = Core;","")
+content=open('content.js').read().replace("if (typeof module !== 'undefined') module.exports = Content;","")
+zh=open('content_zh.js').read(); app=open('app.js').read(); t=open('template.html').read()
+open('index.html','w').write(t.replace('/*CORE*/',core).replace('/*CONTENTZH*/',zh).replace('/*CONTENT*/',content).replace('/*APP*/',app))
+print(len(open('index.html').read()))
